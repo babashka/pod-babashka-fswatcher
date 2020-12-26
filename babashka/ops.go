@@ -3,7 +3,6 @@ package babashka
 import (
 	"bufio"
 	"encoding/json"
-	"log"
 	"os"
 
 	"github.com/jackpal/bencode-go"
@@ -44,29 +43,31 @@ type ErrorResponse struct {
 	ExData    string   "ex-data"
 }
 
-func ReadMessage() *Message {
+func ReadMessage() (*Message, error) {
 	reader := bufio.NewReader(os.Stdin)
 	message := &Message{}
 	err := bencode.Unmarshal(reader, &message)
 	if err != nil {
-		log.Fatalln("Could not decode bencode message", err)
+		return nil, err
 	}
-	log.Printf("Received Message: %+v\n", message)
 
-	return message
+	return message, nil
 }
 
 func WriteDescribeResponse(describeResponse *DescribeResponse) {
 	writeResponse(*describeResponse)
 }
 
-func WriteInvokeResponse(inputMessage *Message, value interface{}) {
+func WriteInvokeResponse(inputMessage *Message, value interface{}) error {
 	resultValue, err := json.Marshal(value)
 	if err != nil {
-		log.Fatalln("Could not marshall value to json", err)
+		return err
 	}
+
 	response := InvokeResponse{Id: inputMessage.Id, Status: []string{"done"}, Value: string(resultValue)}
 	writeResponse(response)
+
+	return nil
 }
 
 func WriteErrorResponse(inputMessage *Message, err error) {
@@ -74,14 +75,15 @@ func WriteErrorResponse(inputMessage *Message, err error) {
 	writeResponse(errorResponse)
 }
 
-func writeResponse(response interface{}) {
-	log.Printf("Writing response: %+v\n", response)
+func writeResponse(response interface{}) error {
 	writer := bufio.NewWriter(os.Stdout)
 	err := bencode.Marshal(writer, response)
 
 	if err != nil {
-		log.Fatalln("Couldn't write response", err)
+		return err
 	}
 
 	writer.Flush()
+
+	return nil
 }

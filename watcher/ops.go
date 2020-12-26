@@ -3,7 +3,6 @@ package watcher
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/babashka/pod-fswatcher/babashka"
 	"github.com/fsnotify/fsnotify"
@@ -19,6 +18,16 @@ type Response struct {
 	Dest  *string `json:"dest,omitempty"`
 	Error *string `json:"error,omitempty"`
 }
+
+type WatcherInfo struct {
+	WatcherId int    `json:"watcher-id"`
+	Type      string `json:"type"`
+}
+
+var (
+	watcher_idx = 0
+	watchers    = make(map[int]*fsnotify.Watcher)
+)
 
 func dispatchEvent(event fsnotify.Event, path string, message *babashka.Message) {
 	response := Response{"", path, nil, nil}
@@ -40,14 +49,17 @@ func dispatchEvent(event fsnotify.Event, path string, message *babashka.Message)
 	babashka.WriteInvokeResponse(message, response)
 }
 
-func watch(message *babashka.Message, path string, opts Opts) {
+func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	defer watcher.Close()
 
-	done := make(chan bool)
+	err = watcher.Add(path)
+	if err != nil {
+		return nil, err
+	}
+
 	go func() {
 		for {
 			select {
@@ -67,17 +79,16 @@ func watch(message *babashka.Message, path string, opts Opts) {
 		}
 	}()
 
-	err = watcher.Add(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	<-done
+	watcher_idx++
+	watchers[watcher_idx] = watcher
+
+	return &WatcherInfo{watcher_idx, "watcher-info"}, nil
 }
 
-func ProcessMessage(message *babashka.Message) {
+func ProcessMessage(message *babashka.Message) (interface{}, error) {
 	switch message.Op {
 	case "describe":
-		babashka.WriteDescribeResponse(&babashka.DescribeResponse{
+		return &babashka.DescribeResponse{
 			Format: "json",
 			Namespaces: []babashka.Namespace{
 				{
@@ -107,30 +118,30 @@ func ProcessMessage(message *babashka.Message) {
 					},
 				},
 			},
-		})
+		}, nil
 	case "invoke":
 		switch message.Var {
 		case "pod.babashka.filewatcher/watch*":
 			args := []json.RawMessage{}
 			err := json.Unmarshal([]byte(message.Args), &args)
 			if err != nil {
-				babashka.WriteErrorResponse(message, err)
+				return nil, err
 			}
 
 			opts := Opts{DelayMs: 2000}
 			err = json.Unmarshal([]byte(args[1]), &opts)
 			if err != nil {
-				babashka.WriteErrorResponse(message, err)
+				return nil, err
 			}
 
 			var path string
 			json.Unmarshal(args[0], &path)
 
-			watch(message, path, opts)
+			return watch(message, path, opts)
 		default:
-			babashka.WriteErrorResponse(message, fmt.Errorf("Unknown var %s", message.Var))
+			return nil, fmt.Errorf("Unknown var %s", message.Var)
 		}
 	default:
-		babashka.WriteErrorResponse(message, fmt.Errorf("Unknown op %s", message.Op))
+		return nil, fmt.Errorf("Unknown op %s", message.Op)
 	}
 }

@@ -7,7 +7,24 @@ import (
 
 func main() {
 	for {
-		message := babashka.ReadMessage()
-		watcher.ProcessMessage(message)
+		message, err := babashka.ReadMessage()
+		if err != nil {
+			babashka.WriteErrorResponse(message, err)
+			continue
+		}
+
+		res, err := watcher.ProcessMessage(message)
+		if err != nil {
+			babashka.WriteErrorResponse(message, err)
+			continue
+		}
+
+		describeRes, ok := res.(*babashka.DescribeResponse)
+		if ok {
+			babashka.WriteDescribeResponse(describeRes)
+			continue
+		}
+
+		babashka.WriteInvokeResponse(message, res)
 	}
 }
