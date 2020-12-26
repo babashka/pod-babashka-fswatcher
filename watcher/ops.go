@@ -115,6 +115,9 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 						{
 							Name: "watch*",
 						},
+						{
+							Name: "unwatch",
+						},
 					},
 				},
 			},
@@ -138,6 +141,21 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 			json.Unmarshal(args[0], &path)
 
 			return watch(message, path, opts)
+		case "pod.babashka.filewatcher/unwatch":
+			args := []int{}
+			err := json.Unmarshal([]byte(message.Args), &args)
+			if err != nil {
+				return nil, err
+			}
+
+			idx := args[0]
+			_, ok := watchers[idx]
+			if ok {
+				watchers[idx].Close()
+				delete(watchers, idx)
+			}
+
+			return nil, nil
 		default:
 			return nil, fmt.Errorf("Unknown var %s", message.Var)
 		}
