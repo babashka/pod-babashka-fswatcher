@@ -42,3 +42,23 @@ the following will be printed:
 {:path "/private/tmp/created_renamed.txt", :type :notice/write}
 {:path "/private/tmp/created_renamed.txt", :type :write}
 ```
+
+## Watching and UnWatching
+To watch on a path P:
+```clojure
+(fw/watch P (fn [event] (prn event)))
+```
+This returns a map:
+```clojure
+{:watcher-id 3
+ :type       "watcher-info"}
+```
+The `watcher-id` uniquely identifies an active watcher in the pod.
+More wathchers can be created with calls to `(fw/watch ...)` each returning a unique id.
+Multiple watchers can be used on the same dir.
+
+To stop the watcher:
+```clojure
+(fw/unwatch num-of-the-watcher)
+```
+This call is idempotent and never fails.
