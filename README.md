@@ -62,3 +62,9 @@ To stop the watcher:
 (fw/unwatch num-of-the-watcher)
 ```
 This call is idempotent and never fails.
+
+### Watch Recursively
+By default this doesn't watch a path recursively. Pass `{:recursive true}` in the opts map to enable it.
+```clojure
+(fw/watch "/dir/to/watch" (fn [event] (prn event)) {:recursive true})
+```

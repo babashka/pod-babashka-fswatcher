@@ -3,13 +3,16 @@ package watcher
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/babashka/pod-fswatcher/babashka"
 	"github.com/fsnotify/fsnotify"
 )
 
 type Opts struct {
-	DelayMs uint64 `json:"delay-ms"`
+	DelayMs   uint64 `json:"delay-ms"`
+	Recursive bool   `json:"recursive"`
 }
 
 type Response struct {
@@ -28,6 +31,32 @@ var (
 	watcher_idx = 0
 	watchers    = make(map[int]*fsnotify.Watcher)
 )
+
+func allFiles(dir string) ([]string, error) {
+	fileInfo, err := os.Stat(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	if !fileInfo.IsDir() {
+		return []string{dir}, nil
+	}
+
+	files := []string{}
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		files = append(files, path)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
+}
 
 func dispatchEvent(event fsnotify.Event, path string, message *babashka.Message) {
 	response := Response{"", path, nil, nil}
@@ -55,7 +84,18 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 		return nil, err
 	}
 
-	err = watcher.Add(path)
+	if opts.Recursive {
+		files, err := allFiles(path)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, file := range files {
+			err = watcher.Add(file)
+		}
+	} else {
+		err = watcher.Add(path)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +171,7 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 				return nil, err
 			}
 
-			opts := Opts{DelayMs: 2000}
+			opts := Opts{DelayMs: 2000, Recursive: false}
 			err = json.Unmarshal([]byte(args[1]), &opts)
 			if err != nil {
 				return nil, err
