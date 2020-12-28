@@ -5,7 +5,7 @@
             [clojure.java.shell :refer [sh]]
             [clojure.test :as t :refer [deftest is testing]]))
 
-(prn (pods/load-pod "./main"))
+(prn (pods/load-pod "./pod-babashka-fswatcher"))
 
 (require '[pod.babashka.filewatcher :as fw])
 
@@ -25,6 +25,7 @@
 (prn :events @events)
 
 (fw/unwatch watcher)
+(fw/unwatch watcher) ;; idempotency
 
 (def ev1 @events)
 
