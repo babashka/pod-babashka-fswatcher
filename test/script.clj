@@ -1,16 +1,28 @@
 #!/usr/bin/env bb
 
 (ns script
-  (:require [babashka.pods :as pods]))
+  (:require [babashka.pods :as pods]
+            [clojure.java.shell :refer [sh]]))
 
-(pods/load-pod "./main")
+(prn (pods/load-pod "./main"))
 
 (require '[pod.babashka.filewatcher :as fw])
 
-(prn (fw/-create-watcher "test" {:delay-ms 2500 :recursive true}))
+(def events (atom []))
 
-;; (def watcher (fw/watch "test" (fn [event] (prn event)) {:delay-ms 2500 :recursive true}))
+(def callback
+  (fn [event]
+    (prn :event event)
+    (swap! events conj event)))
 
-;; (prn :watcher watcher)
+(def watcher (fw/watch "test" callback {:delay-ms 2500 :recursive true}))
 
-@(promise)
+(Thread/sleep 1000)
+(sh "touch" *file*)
+(Thread/sleep 1000)
+
+(prn :events @events)
+
+(fw/unwatch watcher)
+
+(println :done)
