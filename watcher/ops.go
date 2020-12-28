@@ -25,13 +25,19 @@ type Response struct {
 }
 
 type WatcherInfo struct {
-	WatcherId int    `json:"watcher-id"`
-	Type      string `json:"type"`
+	WatcherId int    `json:"watcher/id"`
+}
+
+type FsWatcher struct {
+	Watcher     *fsnotify.Watcher
+	Opts        *Opts
+	WatcherInfo *WatcherInfo
+	Path        string
 }
 
 var (
 	watcher_idx = 0
-	watchers    = make(map[int]*fsnotify.Watcher)
+	watchers    = make(map[int]*FsWatcher)
 )
 
 func listDirRec(dir string) ([]string, error) {
@@ -79,41 +85,45 @@ func debounce(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Eve
 	return output
 }
 
-func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, error) {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return nil, err
-	}
+func StartWatcher(message *babashka.Message, watcherId int) error {
+	fsWatcher := watchers[watcherId]
+	opts := fsWatcher.Opts
+	path := fsWatcher.Path
+	watcher := fsWatcher.Watcher
 
 	if opts.Recursive {
 		files, err := listDirRec(path)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		for _, file := range files {
 			err = watcher.Add(file)
 		}
 	} else {
-		err = watcher.Add(path)
-	}
-	if err != nil {
-		return nil, err
+		err := watcher.Add(path)
+		if err != nil {
+			return err
+		}
 	}
 
 	debounced := debounce(time.Millisecond*time.Duration(opts.DelayMs), watcher.Events)
 
-	go func() {
+	go func() error {
 		for {
 			select {
 			case event := <-debounced:
-				babashka.WriteInvokeResponse(
-					message,
-					Response{strings.ToLower(event.Op.String()), event.Name, nil, nil},
-				)
+				err := babashka.WriteInvokeResponse(message,
+					Response{strings.ToLower(event.Op.String()), event.Name, nil, nil})
+				//println(event.Op.String())
+				if err != nil {
+					msg := err.Error()
+					json, _ := json.Marshal(Response{"error", path, nil, &msg})
+					babashka.WriteInvokeResponse(message, json)
+				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
-					return
+					return err
 				}
 				msg := err.Error()
 				json, _ := json.Marshal(Response{"error", path, nil, &msg})
@@ -122,10 +132,21 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 		}
 	}()
 
-	watcher_idx++
-	watchers[watcher_idx] = watcher
+	return nil
+}
 
-	return &WatcherInfo{watcher_idx, "watcher-info"}, nil
+func CreateWatcher(message *babashka.Message, path string, opts Opts) (*WatcherInfo, error) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
+	}
+
+	watcher_idx++
+	info := WatcherInfo{watcher_idx}
+	fsWatcher := FsWatcher{watcher, &opts, &info, path}
+	watchers[watcher_idx] = &fsWatcher
+
+	return fsWatcher.WatcherInfo, nil
 }
 
 func ProcessMessage(message *babashka.Message) (interface{}, error) {
@@ -138,24 +159,28 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 					Name: "pod.babashka.filewatcher",
 					Vars: []babashka.Var{
 						{
+							Name: "-create-watcher",
+						},
+						{
 							Name: "watch",
 							Code: `
 (defn watch
   ([path cb]
+   (println :watch)
    (watch path cb {}))
   ([path cb opts]
-   (babashka.pods/invoke
-     "pod.babashka.filewatcher"
-     'pod.babashka.filewatcher/watch*
-     [path opts]
-     {:handlers {:success (fn [event]
-                            (cb (update event :type keyword)))
-                 :error   (fn [{:keys [:ex-message :ex-data]}]
-                            (binding [*out* *err*]
-                              (println "ERROR:" ex-message)))}})))`,
-						},
-						{
-							Name: "watch*",
+   (let [ret (pod.babashka.filewatcher/-create-watcher path opts)]
+     (babashka.pods/invoke
+       "pod.babashka.filewatcher"
+       'pod.babashka.filewatcher/-start-watcher
+       [(:watcher/id ret)]
+       {:handlers {:success (fn [event]
+                              (cb (update event :type keyword)))
+                   :error   (fn [{:keys [:ex-message :ex-data]}]
+                              (binding [*out* *err*]
+                                (println "ERROR:" ex-message)))}})
+   ret)))
+`,
 						},
 						{
 							Name: "unwatch",
@@ -166,15 +191,18 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 		}, nil
 	case "invoke":
 		switch message.Var {
-		case "pod.babashka.filewatcher/watch*":
+		case "pod.babashka.filewatcher/-create-watcher":
 			args := []json.RawMessage{}
 			err := json.Unmarshal([]byte(message.Args), &args)
+
 			if err != nil {
 				return nil, err
 			}
 
 			opts := Opts{DelayMs: 2000, Recursive: false}
+
 			err = json.Unmarshal([]byte(args[1]), &opts)
+
 			if err != nil {
 				return nil, err
 			}
@@ -182,22 +210,36 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 			var path string
 			json.Unmarshal(args[0], &path)
 
-			return watch(message, path, opts)
-		case "pod.babashka.filewatcher/unwatch":
-			args := []int{}
+			return CreateWatcher(message, path, opts)
+
+		case "pod.babashka.filewatcher/-start-watcher":
+			args := []json.RawMessage{}
 			err := json.Unmarshal([]byte(message.Args), &args)
 			if err != nil {
 				return nil, err
 			}
 
-			idx := args[0]
+			var watcherId int
+			json.Unmarshal(args[0], &watcherId)
+			return StartWatcher(message, watcherId), nil
+
+		case "pod.babashka.filewatcher/unwatch":
+			args := []json.RawMessage{}
+			err := json.Unmarshal([]byte(message.Args), &args)
+			if err != nil {
+				return nil, err
+			}
+			var info *WatcherInfo = nil
+			err = json.Unmarshal(args[0], &info)
+			// TODO: error handling
+			idx := info.WatcherId
+
 			_, ok := watchers[idx]
 			if ok {
-				watchers[idx].Close()
+				watchers[idx].Watcher.Close()
 				delete(watchers, idx)
 			}
-
-			return nil, nil
+			return info, err
 		default:
 			return nil, fmt.Errorf("Unknown var %s", message.Var)
 		}

@@ -59,11 +59,13 @@ func WriteDescribeResponse(describeResponse *DescribeResponse) {
 }
 
 func WriteInvokeResponse(inputMessage *Message, value interface{}) error {
+	if value == nil {
+		return nil
+	}
 	resultValue, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
-
 	response := InvokeResponse{Id: inputMessage.Id, Status: []string{"done"}, Value: string(resultValue)}
 	writeResponse(response)
 

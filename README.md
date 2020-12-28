@@ -1,69 +1,63 @@
 # pod-babashka-fswatcher
 
 A [babashka pod](https://github.com/babashka/babashka.pods) for watching files.
+
 Implemented using the Go [fsnotify](https://github.com/fsnotiy/fsnotify) library.
 
-## Build & Run
+## Status
 
-Run in [babashka](https://github.com/borkdude/babashka/) or using the
-[babashka.pods](https://github.com/babashka/babashka.pods) library on the JVM.
+Experimental.
 
-- [Go](https://golang.org/dl/) 1.15+ should be installed
-- Clone this repo
-- Run `go build -o pod-babashka-fswatcher main.go` to compile the binary `pod-babashka-fswatcher`
+## Usage
+
+Load the pod:
 
 ``` clojure
 (require '[babashka.pods :as pods])
-(pods/load-pod "/path/to/pod-babashka-fswatcher")
+(pods/load-pod 'org.babashka/fswatcher "0.0.1")
 
-(require '[pod.babashka.filewatcher :as fw])
-
-(fw/watch "/dir-or-file/to/watch" (fn [event] (prn event)) {:delay-ms 50})
+(require '[pod.babashka.fswatcher :as fw])
 ```
 
-As a result of the following terminal sequence:
+Watchers can be created with `fw/watch`:
 
-``` shell
-$ touch created.txt
-$ mv created.txt created_renamed.txt
-$ chmod -w created_renamed.txt
-$ chmod +w created_renamed.txt
-$ echo "foo" >> created_renamed.txt
-```
-
-the following will be printed:
-
-``` clojure
-{:path "/private/tmp/created.txt", :type :create}
-{:path "/private/tmp/created.txt", :type :notice/remove}
-{:path "/private/tmp/created_renamed.txt", :type :chmod}
-{:path "/private/tmp/created_renamed.txt", :type :chmod}
-{:path "/private/tmp/created_renamed.txt", :type :notice/write}
-{:path "/private/tmp/created_renamed.txt", :type :write}
-```
-
-## Watching and UnWatching
-To watch on a path P:
 ```clojure
-(fw/watch P (fn [event] (prn event)))
+(def watcher (fw/watch "src" (fn [event] (prn event))))
 ```
-This returns a map:
-```clojure
-{:watcher-id 3
- :type       "watcher-info"}
-```
-The `watcher-id` uniquely identifies an active watcher in the pod.
-More wathchers can be created with calls to `(fw/watch ...)` each returning a unique id.
-Multiple watchers can be used on the same dir.
 
-To stop the watcher:
-```clojure
-(fw/unwatch num-of-the-watcher)
-```
-This call is idempotent and never fails.
+You can create multiple watchers that run concurrently, even on the same
+directory.
 
-### Watch Recursively
-By default this doesn't watch a path recursively. Pass `{:recursive true}` in the opts map to enable it.
+The `watch` function returns a value which can be passed to `unwatch` which
+stops and cleans up the watcher:
+
 ```clojure
-(fw/watch "/dir/to/watch" (fn [event] (prn event)) {:recursive true})
+(fw/unwatch watcher)
 ```
+
+See [test/script.clj](test/script.clj) for an example test script.
+
+### Watch recursively
+
+By default watchers do not watch recursively. Pass `{:recursive true}` in the
+options map to enable it.
+
+```clojure
+(fw/watch "src" (fn [event] (prn event)) {:recursive true})
+```
+
+## Build
+
+### Requirements
+
+- [Go](https://golang.org/dl/) 1.15+ should be installed.
+- Clone this repo.
+- Run `go build -o pod-babashka-fswatcher main.go` to compile the binary.
+
+## License
+
+## License
+
+Copyright © 2020 Rahuλ Dé and Michiel Borkent
+
+License: TODO
