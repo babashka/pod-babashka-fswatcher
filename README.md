@@ -10,11 +10,11 @@ Run in [babashka](https://github.com/borkdude/babashka/) or using the
 
 - [Go](https://golang.org/dl/) 1.15+ should be installed
 - Clone this repo
-- Run `go build -o fswatcher main.go` to compile the binary `fswatcher`
+- Run `go build -o pod-babashka-fswatcher main.go` to compile the binary `pod-babashka-fswatcher`
 
 ``` clojure
 (require '[babashka.pods :as pods])
-(pods/load-pod "/path/to/fswatcher")
+(pods/load-pod "/path/to/pod-babashka-fswatcher")
 
 (require '[pod.babashka.filewatcher :as fw])
 
