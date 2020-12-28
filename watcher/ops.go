@@ -30,9 +30,10 @@ type WatcherInfo struct {
 }
 
 type FsWatcher struct {
-	Watcher *fsnotify.Watcher
-	Opts    *Opts
+	Watcher     *fsnotify.Watcher
+	Opts        *Opts
 	WatcherInfo *WatcherInfo
+	Path        string
 }
 
 var (
@@ -85,26 +86,26 @@ func debounce(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Eve
 	return output
 }
 
-func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, error) {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return nil, err
-	}
+func StartWatcher(message *babashka.Message, watcherId int) error {
+	fsWatcher := watchers[watcherId]
+	opts := fsWatcher.Opts
+	path := fsWatcher.Path
+	watcher := fsWatcher.Watcher
 
 	if opts.Recursive {
 		files, err := listDirRec(path)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		for _, file := range files {
 			err = watcher.Add(file)
 		}
 	} else {
-		err = watcher.Add(path)
-	}
-	if err != nil {
-		return nil, err
+		err := watcher.Add(path)
+		if err != nil {
+			return err
+		}
 	}
 
 	debounced := debounce(time.Millisecond*time.Duration(opts.DelayMs), watcher.Events)
@@ -128,10 +129,7 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 		}
 	}()
 
-	// watcher_idx++
-	// watchers[watcher_idx] = watcher
-
-	return &WatcherInfo{watcher_idx, "watcher-info"}, nil
+	return nil
 }
 
 func CreateWatcher(message *babashka.Message, path string, opts Opts) (*WatcherInfo, error) {
@@ -142,7 +140,7 @@ func CreateWatcher(message *babashka.Message, path string, opts Opts) (*WatcherI
 
 	watcher_idx++
 	info := WatcherInfo{watcher_idx, "watcher-info"}
-	fsWatcher := FsWatcher{watcher, &opts, &info}
+	fsWatcher := FsWatcher{watcher, &opts, &info, path}
 	watchers[watcher_idx] = &fsWatcher
 
 	return fsWatcher.WatcherInfo, nil
@@ -158,24 +156,27 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 					Name: "pod.babashka.filewatcher",
 					Vars: []babashka.Var{
 						{
+							Name: "-create-watcher",
+						},
+						{
 							Name: "watch",
 							Code: `
 (defn watch
   ([path cb]
    (watch path cb {}))
   ([path cb opts]
-   (babashka.pods/invoke
-     "pod.babashka.filewatcher"
-     'pod.babashka.filewatcher/watch*
-     [path opts]
-     {:handlers {:success (fn [event]
+   (let [ret (pod.babashka.filewatcher/-create-watcher path opts)]
+     (babashka.pods/invoke
+       "pod.babashka.filewatcher"
+       'pod.babashka.filewatcher/-start-watcher
+       [(:watcher-id ret)]
+       {:handlers {:success (fn [event]
                             (cb (update event :type keyword)))
-                 :error   (fn [{:keys [:ex-message :ex-data]}]
-                            (binding [*out* *err*]
-                              (println "ERROR:" ex-message)))}})))`,
-						},
-						{
-							Name: "-create-watcher",
+                   :error   (fn [{:keys [:ex-message :ex-data]}]
+                              (binding [*out* *err*]
+                                (println "ERROR:" ex-message)))}})
+   ret)))
+`,
 						},
 						{
 							Name: "unwatch",
@@ -207,23 +208,17 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 
 			return CreateWatcher(message, path, opts)
 
-		case "pod.babashka.filewatcher/watch*":
+		case "pod.babashka.filewatcher/-start-watcher":
 			args := []json.RawMessage{}
 			err := json.Unmarshal([]byte(message.Args), &args)
 			if err != nil {
 				return nil, err
 			}
 
-			opts := Opts{DelayMs: 2000, Recursive: false}
-			err = json.Unmarshal([]byte(args[1]), &opts)
-			if err != nil {
-				return nil, err
-			}
+			var watcherId int
+			json.Unmarshal(args[0], &watcherId)
 
-			var path string
-			json.Unmarshal(args[0], &path)
-
-			return watch(message, path, opts)
+			return nil, StartWatcher(message, watcherId)
 		case "pod.babashka.filewatcher/unwatch":
 			args := []int{}
 			err := json.Unmarshal([]byte(message.Args), &args)
