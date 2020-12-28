@@ -77,7 +77,7 @@ func debounce(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Eve
 					buffer = append(buffer, event)
 				} else {
 					output <- &event
-                    sent = true
+					sent = true
 				}
 			case <-time.After(delay):
 				for _, info := range buffer {
