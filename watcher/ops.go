@@ -168,8 +168,7 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
                             (cb (update event :type keyword)))
                  :error   (fn [{:keys [:ex-message :ex-data]}]
                             (binding [*out* *err*]
-                              (println "ERROR:" ex-message)))}})
-   nil))`,
+                              (println "ERROR:" ex-message)))}})))`,
                                                 },
                                                 {
                                                         Name: "watch*",
