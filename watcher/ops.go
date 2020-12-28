@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/babashka/pod-fswatcher/babashka"
 	"github.com/fsnotify/fsnotify"
@@ -33,7 +34,7 @@ var (
 	watchers    = make(map[int]*fsnotify.Watcher)
 )
 
-func allFiles(dir string) ([]string, error) {
+func listDirRec(dir string) ([]string, error) {
 	fileInfo, err := os.Stat(dir)
 	if err != nil {
 		return nil, err
@@ -59,6 +60,25 @@ func allFiles(dir string) ([]string, error) {
 	return files, nil
 }
 
+func debounce(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Event {
+	output := make(chan *fsnotify.Event)
+	go func() {
+		for {
+			select {
+			case event, ok := <-input:
+				if !ok {
+					return
+				}
+				output <- &event
+			case <-time.After(50 * time.Millisecond):
+				time.Sleep(delay)
+			}
+		}
+	}()
+
+	return output
+}
+
 func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -66,7 +86,7 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 	}
 
 	if opts.Recursive {
-		files, err := allFiles(path)
+		files, err := listDirRec(path)
 		if err != nil {
 			return nil, err
 		}
@@ -81,13 +101,12 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 		return nil, err
 	}
 
+	debounced := debounce(time.Millisecond*time.Duration(opts.DelayMs), watcher.Events)
+
 	go func() {
 		for {
 			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
+			case event := <-debounced:
 				babashka.WriteInvokeResponse(
 					message,
 					Response{strings.ToLower(event.Op.String()), event.Name, nil, nil},
@@ -133,8 +152,7 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
                             (cb (update event :type keyword)))
                  :error   (fn [{:keys [:ex-message :ex-data]}]
                             (binding [*out* *err*]
-                              (println "ERROR:" ex-message)))}})
-   nil))`,
+                              (println "ERROR:" ex-message)))}})))`,
 						},
 						{
 							Name: "watch*",
