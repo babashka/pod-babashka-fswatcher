@@ -29,9 +29,15 @@ type WatcherInfo struct {
 	Type      string `json:"type"`
 }
 
+type FsWatcher struct {
+	Watcher *fsnotify.Watcher
+	Opts    *Opts
+	WatcherInfo *WatcherInfo
+}
+
 var (
 	watcher_idx = 0
-	watchers    = make(map[int]*fsnotify.Watcher)
+	watchers    = make(map[int]*FsWatcher)
 )
 
 func listDirRec(dir string) ([]string, error) {
@@ -122,10 +128,24 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 		}
 	}()
 
-	watcher_idx++
-	watchers[watcher_idx] = watcher
+	// watcher_idx++
+	// watchers[watcher_idx] = watcher
 
 	return &WatcherInfo{watcher_idx, "watcher-info"}, nil
+}
+
+func CreateWatcher(message *babashka.Message, path string, opts Opts) (*WatcherInfo, error) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
+	}
+
+	watcher_idx++
+	info := WatcherInfo{watcher_idx, "watcher-info"}
+	fsWatcher := FsWatcher{watcher, &opts, &info}
+	watchers[watcher_idx] = &fsWatcher
+
+	return fsWatcher.WatcherInfo, nil
 }
 
 func ProcessMessage(message *babashka.Message) (interface{}, error) {
@@ -155,7 +175,7 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
                               (println "ERROR:" ex-message)))}})))`,
 						},
 						{
-							Name: "watch*",
+							Name: "-create-watcher",
 						},
 						{
 							Name: "unwatch",
@@ -166,6 +186,27 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 		}, nil
 	case "invoke":
 		switch message.Var {
+		case "pod.babashka.filewatcher/-create-watcher":
+			args := []json.RawMessage{}
+			err := json.Unmarshal([]byte(message.Args), &args)
+
+			if err != nil {
+				return nil, err
+			}
+
+			opts := Opts{DelayMs: 2000, Recursive: false}
+
+			err = json.Unmarshal([]byte(args[1]), &opts)
+
+			if err != nil {
+				return nil, err
+			}
+
+			var path string
+			json.Unmarshal(args[0], &path)
+
+			return CreateWatcher(message, path, opts)
+
 		case "pod.babashka.filewatcher/watch*":
 			args := []json.RawMessage{}
 			err := json.Unmarshal([]byte(message.Args), &args)
@@ -193,7 +234,7 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 			idx := args[0]
 			_, ok := watchers[idx]
 			if ok {
-				watchers[idx].Close()
+				watchers[idx].Watcher.Close()
 				delete(watchers, idx)
 			}
 

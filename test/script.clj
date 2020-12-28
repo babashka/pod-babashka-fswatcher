@@ -7,8 +7,10 @@
 
 (require '[pod.babashka.filewatcher :as fw])
 
-(def watcher (fw/watch "test" (fn [event] (prn event)) {:delay-ms 2500 :recursive true}))
+(prn (fw/-create-watcher "test" {:delay-ms 2500 :recursive true}))
 
-(prn :watcher watcher)
+;; (def watcher (fw/watch "test" (fn [event] (prn event)) {:delay-ms 2500 :recursive true}))
+
+;; (prn :watcher watcher)
 
 @(promise)

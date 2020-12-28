@@ -63,7 +63,6 @@ func WriteInvokeResponse(inputMessage *Message, value interface{}) error {
 	if err != nil {
 		return err
 	}
-
 	response := InvokeResponse{Id: inputMessage.Id, Status: []string{"done"}, Value: string(resultValue)}
 	writeResponse(response)
 
