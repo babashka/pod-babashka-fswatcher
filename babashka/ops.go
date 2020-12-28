@@ -16,31 +16,31 @@ type Message struct {
 }
 
 type Namespace struct {
-	Name string `json:"name"`
-	Vars []Var  `json:"vars"`
+	Name string "name"
+	Vars []Var  "vars"
 }
 
 type Var struct {
-	Name string `json:"name"`
+	Name string "name"
 	Code string `bencode:"code,omitempty"`
 }
 
 type DescribeResponse struct {
-	Format     string      `json:"format"`
-	Namespaces []Namespace `json:"namespaces"`
+	Format     string      "format"
+	Namespaces []Namespace "namespaces"
 }
 
 type InvokeResponse struct {
-	Id     string   `json:"id"`
-	Value  string   `json:"value"` // stringified json response
-	Status []string `json:"status"`
+	Id     string   "id"
+	Value  string   "value" // stringified json response
+	Status []string "status"
 }
 
 type ErrorResponse struct {
-	Id        string   `json:"id"`
-	Status    []string `json:"status"`
-	ExMessage string   `json:"ex-message"`
-	ExData    string   `json:"ex-data"`
+	Id        string   "id"
+	Status    []string "status"
+	ExMessage string   "ex-message"
+	ExData    string   "ex-data"
 }
 
 func ReadMessage() (*Message, error) {
