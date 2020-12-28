@@ -67,23 +67,24 @@ func debounce(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Eve
 		var (
 			buffer   *fsnotify.Event
 			timer <-chan time.Time
+			hasNew   bool = false
 		)
 
 		// Start debouncing
 		for {
 			select {
-			case buffer, ok := <-input:
+			case event, ok := <-input:
 				if !ok {
 					return
 				}
-				println("Received raw event")
-				println(json.Marshal(buffer))
 				timer = time.After(delay)
+				buffer = &event
+				hasNew = true
 			case <-timer:
-				println("Timer is up!\n")
 				timer = nil
-				if buffer != nil {
+				if hasNew {
 					output <- buffer
+					hasNew = false
 				}
 			}
 		}
@@ -123,6 +124,7 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 				// if !ok {
 				// 	return
 				// }
+				println("event:")
 				println(event)
 
 				babashka.WriteInvokeResponse(
