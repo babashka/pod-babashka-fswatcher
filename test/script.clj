@@ -12,7 +12,7 @@
 
 (def callback
   (fn [event]
-    (prn :event event)
+    ;; (prn :event event)
     (swap! events conj event)))
 
 (def watcher (fw/watch "test" callback {:delay-ms 250 :recursive true}))

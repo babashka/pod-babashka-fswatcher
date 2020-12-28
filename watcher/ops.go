@@ -113,10 +113,9 @@ func StartWatcher(message *babashka.Message, watcherId int) error {
 		for {
 			select {
 			case event := <-debounced:
-				println("event")
 				err := babashka.WriteInvokeResponse(message,
 					Response{strings.ToLower(event.Op.String()), event.Name, nil, nil})
-				println(event.Op.String())
+				//println(event.Op.String())
 				if err != nil {
 					msg := err.Error()
 					json, _ := json.Marshal(Response{"error", path, nil, &msg})
