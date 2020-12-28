@@ -61,7 +61,6 @@ func allFiles(dir string) ([]string, error) {
 }
 
 func debounce(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Event {
-	send := true
 	buffer := []fsnotify.Event{}
 	output := make(chan *fsnotify.Event)
 
@@ -73,24 +72,11 @@ func debounce(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Eve
 					return
 				}
 				buffer = append(buffer, event)
-
 			case <-time.After(delay):
-				send = true // always send after delay
-				// flush buffer
 				for _, info := range buffer {
-					send = false // we have flushed the buffer, now we wait
 					output <- &info
 				}
 				buffer = []fsnotify.Event{}
-			default:
-				if send {
-					// flush buffer
-					for _, info := range buffer {
-						send = false // we have flushed the buffer, now we wait
-						output <- &info
-					}
-					buffer = []fsnotify.Event{}
-				}
 			}
 		}
 	}()
@@ -126,9 +112,6 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 		for {
 			select {
 			case event := <-debounced:
-				// if !ok {
-				//      return
-				// }
 				babashka.WriteInvokeResponse(
 					message,
 					Response{strings.ToLower(event.Op.String()), event.Name, nil, nil},
