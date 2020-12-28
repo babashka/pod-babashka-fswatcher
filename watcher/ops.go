@@ -34,7 +34,7 @@ var (
 	watchers    = make(map[int]*fsnotify.Watcher)
 )
 
-func allFiles(dir string) ([]string, error) {
+func listDirRec(dir string) ([]string, error) {
 	fileInfo, err := os.Stat(dir)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 	}
 
 	if opts.Recursive {
-		files, err := allFiles(path)
+		files, err := listDirRec(path)
 		if err != nil {
 			return nil, err
 		}
