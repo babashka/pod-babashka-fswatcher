@@ -1,4 +1,4 @@
-# pod-fswatcher
+# pod-babashka-fswatcher
 
 A [babashka pod](https://github.com/babashka/babashka.pods) for watching files.
 Implemented using the Go [fsnotify](https://github.com/fsnotiy/fsnotify) library.
@@ -36,7 +36,6 @@ the following will be printed:
 ``` clojure
 {:path "/private/tmp/created.txt", :type :create}
 {:path "/private/tmp/created.txt", :type :notice/remove}
-{:dest "/private/tmp/created_renamed.txt", :path "/private/tmp/created.txt", :type :rename}
 {:path "/private/tmp/created_renamed.txt", :type :chmod}
 {:path "/private/tmp/created_renamed.txt", :type :chmod}
 {:path "/private/tmp/created_renamed.txt", :type :notice/write}
