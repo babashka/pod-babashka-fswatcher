@@ -229,9 +229,9 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
-
 			var info *WatcherInfo = nil
-			json.Unmarshal(args[0], &info)
+			err = json.Unmarshal(args[0], &info)
+			// TODO: error handling
 			idx := info.WatcherId
 
 			_, ok := watchers[idx]
@@ -239,8 +239,7 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 				watchers[idx].Watcher.Close()
 				delete(watchers, idx)
 			}
-
-			return nil, nil
+			return info, err
 		default:
 			return nil, fmt.Errorf("Unknown var %s", message.Var)
 		}
