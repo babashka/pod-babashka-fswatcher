@@ -115,7 +115,7 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 		return nil, err
 	}
 
-	debounced := debounce(time.Millisecond * 1000, watcher.Events)
+	debounced := debounce(time.Millisecond * 5000, watcher.Events)
 
 	go func() {
 		for {
@@ -124,9 +124,6 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 				// if !ok {
 				// 	return
 				// }
-				println("event:")
-				println(event)
-
 				babashka.WriteInvokeResponse(
 					message,
 					Response{strings.ToLower(event.Op.String()), event.Name, nil, nil},
