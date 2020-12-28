@@ -60,13 +60,12 @@ func allFiles(dir string) ([]string, error) {
 	return files, nil
 }
 
-func debounce(delay time.Duration, input chan fsnotify.Event) chan *WatcherInfo {
-	output := make(chan *WatcherInfo)
+func debounce(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Event {
+	output := make(chan *fsnotify.Event)
 
 	go func() {
 		var (
-			buffer   *WatcherInfo
-			ok       bool
+			buffer   *fsnotify.Event
 			timer <-chan time.Time
 		)
 
