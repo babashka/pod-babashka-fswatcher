@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 	"path/filepath"
 	"strings"
 
@@ -59,6 +60,36 @@ func allFiles(dir string) ([]string, error) {
 	return files, nil
 }
 
+func debounce(delay time.Duration, input chan fsnotify.Event) chan *WatcherInfo {
+	output := make(chan *WatcherInfo)
+
+	go func() {
+		var (
+			buffer   *WatcherInfo
+			ok       bool
+			timer <-chan time.Time
+		)
+
+		// Start debouncing
+		for {
+			select {
+			case buffer, ok := <-input:
+				if !ok {
+					return
+				}
+				fmt.Printf("Received raw event %s\n", buffer)
+				timer = time.After(delay)
+			case <-timer:
+				fmt.Printf("Timer is up!\n")
+				timer = nil
+				output <- buffer
+			}
+		}
+	}()
+
+	return output
+}
+
 func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -81,13 +112,15 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 		return nil, err
 	}
 
+	debounced := debounce(time.Millisecond * 1000, watcher.Events)
+
 	go func() {
 		for {
 			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
+			case event := <-debounced:
+				// if !ok {
+				// 	return
+				// }
 				babashka.WriteInvokeResponse(
 					message,
 					Response{strings.ToLower(event.Op.String()), event.Name, nil, nil},
