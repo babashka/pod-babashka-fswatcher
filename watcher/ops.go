@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/babashka/pod-fswatcher/babashka"
 	"github.com/fsnotify/fsnotify"
@@ -58,26 +59,6 @@ func allFiles(dir string) ([]string, error) {
 	return files, nil
 }
 
-func dispatchEvent(event fsnotify.Event, path string, message *babashka.Message) {
-	response := Response{"", path, nil, nil}
-
-	switch event.Op.String() {
-	case "CHMOD":
-		response.Type = "chmod"
-	case "CREATE":
-		response.Type = "create"
-	case "REMOVE":
-		response.Type = "remove"
-	case "RENAME":
-		response.Type = "rename"
-		response.Dest = &event.Name
-	case "WRITE":
-		response.Type = "write"
-	}
-
-	babashka.WriteInvokeResponse(message, response)
-}
-
 func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -107,7 +88,10 @@ func watch(message *babashka.Message, path string, opts Opts) (*WatcherInfo, err
 				if !ok {
 					return
 				}
-				dispatchEvent(event, path, message)
+				babashka.WriteInvokeResponse(
+					message,
+					Response{strings.ToLower(event.Op.String()), event.Name, nil, nil},
+				)
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
