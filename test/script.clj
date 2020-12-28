@@ -15,11 +15,11 @@
     (prn :event event)
     (swap! events conj event)))
 
-(def watcher (fw/watch "test" callback {:delay-ms 2500 :recursive true}))
+(def watcher (fw/watch "test" callback {:delay-ms 250 :recursive true}))
 
-(Thread/sleep 1000)
+(Thread/sleep 200)
 (sh "touch" *file*)
-(Thread/sleep 1000)
+(Thread/sleep 3000)
 
 (prn :events @events)
 
