@@ -61,29 +61,26 @@ func allFiles(dir string) ([]string, error) {
 }
 
 func debounce(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Event {
-        output := make(chan *fsnotify.Event)
-	//timer :=make(chan time.Time)
-	timer := time.After(delay)
+	buffer := []fsnotify.Event{}
+	output := make(chan *fsnotify.Event)
+        //timer :=make(chan time.Time)
 
-        go func() {
-
-                // Start debouncing
-                for {
-                        select {
-                        case <-timer:
-                                timer = time.After(delay)
-                                for {
-					select {
-					case event, ok := <-input:
-						if !ok {
-							return
-						}
-						output <- &event
-					}
+	go func() {
+		for {
+			select {
+			case event, ok := <-input:
+				if !ok {
+					return
 				}
-                        }
-                }
-        }()
+				buffer = append(buffer,event)
+			case <-time.After(delay):
+				for _, info := range buffer {
+					output <- &info
+				}
+				buffer = []fsnotify.Event{}
+			}
+		}
+	}()
 
         return output
 }
