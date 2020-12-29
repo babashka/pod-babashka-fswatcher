@@ -24,6 +24,12 @@ jobs:
             GOOS: windows
             GOARCH: amd64
           command: go build -o windows-amd64/pod-babashka-fswatcher.exe main.go
+      - run:
+          name: Install bb for test
+          command: bash <(curl -sL https://raw.githubusercontent.com/borkdude/babashka/master/install) --dir . --download-dir .
+      - run:
+          name: Run test
+          command: cp linux-amd64/pod-babashka-fswatcher . && script/test
       - save_cache:
           key: pod-babashka-fswatcher-{{ checksum "go.sum" }}-{{ checksum ".circleci/config.yml" }}
           paths:
