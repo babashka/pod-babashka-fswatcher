@@ -156,7 +156,7 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 			Format: "json",
 			Namespaces: []babashka.Namespace{
 				{
-					Name: "pod.babashka.filewatcher",
+					Name: "pod.babashka.fswatcher",
 					Vars: []babashka.Var{
 						{
 							Name: "-create-watcher",
@@ -169,10 +169,10 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
    (println :watch)
    (watch path cb {}))
   ([path cb opts]
-   (let [ret (pod.babashka.filewatcher/-create-watcher path opts)]
+   (let [ret (pod.babashka.fswatcher/-create-watcher path opts)]
      (babashka.pods/invoke
-       "pod.babashka.filewatcher"
-       'pod.babashka.filewatcher/-start-watcher
+       "pod.babashka.fswatcher"
+       'pod.babashka.fswatcher/-start-watcher
        [(:watcher/id ret)]
        {:handlers {:success (fn [event]
                               (cb (update event :type keyword)))
@@ -190,7 +190,7 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 		}, nil
 	case "invoke":
 		switch message.Var {
-		case "pod.babashka.filewatcher/-create-watcher":
+		case "pod.babashka.fswatcher/-create-watcher":
 			args := []json.RawMessage{}
 			if err := json.Unmarshal([]byte(message.Args), &args); err != nil {
 				return nil, err
@@ -206,7 +206,7 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 
 			return createWatcher(message, path, opts)
 
-		case "pod.babashka.filewatcher/-start-watcher":
+		case "pod.babashka.fswatcher/-start-watcher":
 			args := []int{}
 			if err := json.Unmarshal([]byte(message.Args), &args); err != nil {
 				return nil, err
@@ -214,7 +214,7 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 
 			return startWatcher(message, args[0]), nil
 
-		case "pod.babashka.filewatcher/unwatch":
+		case "pod.babashka.fswatcher/unwatch":
 			args := []WatcherInfo{}
 			if err := json.Unmarshal([]byte(message.Args), &args); err != nil {
 				return nil, err

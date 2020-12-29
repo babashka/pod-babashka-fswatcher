@@ -7,7 +7,7 @@
 
 (prn (pods/load-pod "./pod-babashka-fswatcher"))
 
-(require '[pod.babashka.filewatcher :as fw])
+(require '[pod.babashka.fswatcher :as fw])
 
 (def events (atom []))
 
