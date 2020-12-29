@@ -46,8 +46,7 @@ type ErrorResponse struct {
 func ReadMessage() (*Message, error) {
 	reader := bufio.NewReader(os.Stdin)
 	message := &Message{}
-	err := bencode.Unmarshal(reader, &message)
-	if err != nil {
+	if err := bencode.Unmarshal(reader, &message); err != nil {
 		return nil, err
 	}
 
@@ -79,9 +78,7 @@ func WriteErrorResponse(inputMessage *Message, err error) {
 
 func writeResponse(response interface{}) error {
 	writer := bufio.NewWriter(os.Stdout)
-	err := bencode.Marshal(writer, response)
-
-	if err != nil {
+	if err := bencode.Marshal(writer, response); err != nil {
 		return err
 	}
 
