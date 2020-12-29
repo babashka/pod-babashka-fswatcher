@@ -166,7 +166,6 @@ func ProcessMessage(message *babashka.Message) (interface{}, error) {
 							Code: `
 (defn watch
   ([path cb]
-   (println :watch)
    (watch path cb {}))
   ([path cb opts]
    (let [ret (pod.babashka.fswatcher/-create-watcher path opts)]
