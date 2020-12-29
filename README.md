@@ -56,8 +56,6 @@ options map to enable it.
 
 ## License
 
-## License
+Copyright © 2020 Rahul De and Michiel Borkent
 
-Copyright © 2020 Rahuλ Dé and Michiel Borkent
-
-License: TODO
+License: [BSD 3-Clause](https://opensource.org/licenses/BSD-3-Clause)
