@@ -26,7 +26,7 @@ jobs:
           command: go build -o windows-amd64/pod-babashka-fswatcher.exe main.go
       - run:
           name: Install bb for test
-          command: sudo bash <(curl -sL https://raw.githubusercontent.com/borkdude/babashka/master/install)
+          command: sudo bash <(curl -sL https://raw.githubusercontent.com/borkdude/babashka/master/install) --download-dir .
       - run:
           name: Run test
           command: cp linux-amd64/pod-babashka-fswatcher . && script/test
