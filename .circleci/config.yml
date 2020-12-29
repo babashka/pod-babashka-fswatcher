@@ -10,7 +10,7 @@ jobs:
           keys:
             - pod-babashka-fswatcher-{{ checksum "go.sum" }}-{{ checksum ".circleci/config.yml" }}
       - run:
-          name: Build liunx binary
+          name: Build linux binary
           command: go build -o linux-amd64/pod-babashka-fswatcher main.go
       - run:
           name: Build mac binary
@@ -34,7 +34,7 @@ jobs:
             VERSION=$(cat resources/POD_BABASHKA_FSWATCHER_VERSION)
             mkdir release
 
-            zip -j "release/pod-babashka-fswatcher-$VERSION-liunx-amd64.zip" linux-amd64/pod-babashka-fswatcher
+            zip -j "release/pod-babashka-fswatcher-$VERSION-linux-amd64.zip" linux-amd64/pod-babashka-fswatcher
             zip -j "release/pod-babashka-fswatcher-$VERSION-macos-amd64.zip" macos-amd64/pod-babashka-fswatcher
             zip -j "release/pod-babashka-fswatcher-$VERSION-windows-amd64.zip" windows-amd64/pod-babashka-fswatcher.exe
       - store_artifacts:
