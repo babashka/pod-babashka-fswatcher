@@ -27,12 +27,12 @@ jobs:
       - run:
           name: Install bb for test
           command: |
-              mkdir babashka
+              mkdir bb
               bash <(curl -sL https://raw.githubusercontent.com/borkdude/babashka/master/install) \
-                --dir babashka --download-dir babashka
+                --dir bb --download-dir bb
       - run:
           name: Run test
-          command: cp linux-amd64/pod-babashka-fswatcher . && PATH=$PATH:babashka script/test
+          command: cp linux-amd64/pod-babashka-fswatcher . && PATH=$PATH:bb script/test
       - save_cache:
           key: pod-babashka-fswatcher-{{ checksum "go.sum" }}-{{ checksum ".circleci/config.yml" }}
           paths:
