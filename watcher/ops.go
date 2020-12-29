@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/babashka/pod-fswatcher/babashka"
+	"github.com/babashka/pod-babashka-fswatcher/babashka"
 	"github.com/fsnotify/fsnotify"
 )
 

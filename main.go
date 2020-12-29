@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/babashka/pod-fswatcher/babashka"
-	"github.com/babashka/pod-fswatcher/watcher"
+	"github.com/babashka/pod-babashka-fswatcher/babashka"
+	"github.com/babashka/pod-babashka-fswatcher/watcher"
 )
 
 func main() {

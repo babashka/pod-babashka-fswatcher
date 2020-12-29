@@ -1,4 +1,4 @@
-module github.com/babashka/pod-fswatcher
+module github.com/babashka/pod-babashka-fswatcher
 
 go 1.15
 
