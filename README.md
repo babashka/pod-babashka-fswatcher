@@ -2,7 +2,7 @@
 
 A [babashka pod](https://github.com/babashka/babashka.pods) for watching files.
 
-Implemented using the Go [fsnotify](https://github.com/fsnotiy/fsnotify) library.
+Implemented using the Go [fsnotify](https://github.com/fsnotify/fsnotify) library.
 
 ## Status
 
@@ -14,7 +14,7 @@ Load the pod:
 
 ``` clojure
 (require '[babashka.pods :as pods])
-(pods/load-pod 'org.babashka/fswatcher "0.0.1")
+(pods/load-pod 'org.babashka/fswatcher "0.0.2")
 
 (require '[pod.babashka.fswatcher :as fw])
 ```
