@@ -117,17 +117,14 @@ func startWatcher(message *babashka.Message, watcherId int) error {
 					Response{strings.ToLower(event.Op.String()), event.Name, nil, nil},
 				)
 				if err != nil {
-					msg := err.Error()
-					json, _ := json.Marshal(Response{"error", path, nil, &msg})
-					babashka.WriteInvokeResponse(message, json)
+					babashka.WriteErrorResponse(message, err)
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return err
 				}
 				msg := err.Error()
-				json, _ := json.Marshal(Response{"error", path, nil, &msg})
-				babashka.WriteInvokeResponse(message, json)
+				babashka.WriteInvokeResponse(message, Response{"error", path, nil, &msg})
 			}
 		}
 	}()
