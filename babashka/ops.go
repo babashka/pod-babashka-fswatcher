@@ -57,7 +57,7 @@ func WriteDescribeResponse(describeResponse *DescribeResponse) {
 	writeResponse(*describeResponse)
 }
 
-func WriteInvokeResponse(inputMessage *Message, value interface{}) error {
+func WriteInvokeResponse(inputMessage *Message, value any) error {
 	if value == nil {
 		return nil
 	}
@@ -76,7 +76,7 @@ func WriteErrorResponse(inputMessage *Message, err error) {
 	writeResponse(errorResponse)
 }
 
-func writeResponse(response interface{}) error {
+func writeResponse(response any) error {
 	writer := bufio.NewWriter(os.Stdout)
 	if err := bencode.Marshal(writer, response); err != nil {
 		return err
