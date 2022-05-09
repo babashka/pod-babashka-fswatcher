@@ -146,7 +146,7 @@ func createWatcher(message *babashka.Message, path string, opts Opts) (*WatcherI
 	return fsWatcher.WatcherInfo, nil
 }
 
-func ProcessMessage(message *babashka.Message) (interface{}, error) {
+func ProcessMessage(message *babashka.Message) (any, error) {
 	switch message.Op {
 	case "describe":
 		return &babashka.DescribeResponse{
