@@ -14,7 +14,7 @@ Load the pod:
 
 ``` clojure
 (require '[babashka.pods :as pods])
-(pods/load-pod 'org.babashka/fswatcher "0.0.2")
+(pods/load-pod 'org.babashka/fswatcher "0.0.3")
 
 (require '[pod.babashka.fswatcher :as fw])
 ```
@@ -50,7 +50,7 @@ options map to enable it.
 
 ### Requirements
 
-- [Go](https://golang.org/dl/) 1.15+ should be installed.
+- [Go](https://golang.org/dl/) 1.18+ should be installed.
 - Clone this repo.
 - Run `go build -o pod-babashka-fswatcher main.go` to compile the binary.
 
