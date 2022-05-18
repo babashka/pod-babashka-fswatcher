@@ -37,6 +37,20 @@ stops and cleans up the watcher:
 
 See [test/script.clj](test/script.clj) for an example test script.
 
+### Usage in bb.edn
+
+In babashka 0.8.0 it is possible to specify pods in `bb.edn`:
+
+``` clojure
+{:pods {org.babashka/fswatcher {:version "0.0.3"}}
+ :tasks {watch {:requires ([pod.babashka.fswatcher :as fw])
+                :task (do (fw/watch "project.clj"
+                                    (fn [event]
+                                      (when (#{:write :write|chmod} (:type event))
+                                        (println "hello!"))))
+                          (deref (promise)))}}}
+```
+
 ### Watch recursively
 
 By default watchers do not watch recursively. Pass `{:recursive true}` in the
