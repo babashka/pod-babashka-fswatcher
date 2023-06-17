@@ -19,7 +19,7 @@
 (def watcher (fw/watch "test" callback {:delay-ms 250 :recursive true}))
 
 (Thread/sleep 200)
-(sh "touch" *file*)
+(sh "touch" *file*);;touches current file
 (Thread/sleep 1000)
 
 (prn :events @events)
@@ -35,8 +35,8 @@
 (def ev2 @events)
 
 (deftest events-test
-  (is (pos? (count ev1)))
-  (is (contains? (set (map :path ev1)) "test/script.clj"))
+  (is (= 1 (count ev1)))
+  (is (= (:path (first ev1)) "test/script.clj"))
   (testing "No new events after unwatch"
     (is (= (count ev1) (count ev2)))))
 
