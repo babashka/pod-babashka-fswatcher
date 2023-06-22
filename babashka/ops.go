@@ -45,7 +45,7 @@ type ErrorResponse struct {
 
 func ReadMessage() (*Message, error) {
 	reader := bufio.NewReader(os.Stdin)
-	message := &Message{}
+	message := &Message{}//message holds the address of *Message, a pointer
 	if err := bencode.Unmarshal(reader, &message); err != nil {
 		return nil, err
 	}
