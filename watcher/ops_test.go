@@ -9,15 +9,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackpal/bencode-go"
-
 	"github.com/babashka/pod-babashka-fswatcher/babashka"
+	"github.com/jackpal/bencode-go"
 )
 
 func TestStartWatcher(t *testing.T) {
 
 	watchFolder := "."
 	thisFile := "ops_test.go"
+	delay := 250
+	recursive := true
 
 	createMessage := babashka.Message{
 		Op: "invoke", Id: "101", Var: "pod.babashka.fswatcher/-create-watcher", Args: "[101]"}
@@ -25,7 +26,7 @@ func TestStartWatcher(t *testing.T) {
 	startMessage := babashka.Message{
 		Op: "invoke", Id: "2", Var: "pod.babashka.fswatcher/-start-watcher", Args: "[102]"}
 
-	opts := Opts{DelayMs: 50, Recursive: true}
+	opts := Opts{DelayMs: uint64(delay), Recursive: recursive}
 
 	watcherInfo, err := createWatcher(&createMessage, watchFolder, opts)
 
@@ -42,12 +43,22 @@ func TestStartWatcher(t *testing.T) {
 	//touch this file and capture babashka output
 	fsNotifications, err := captureBabashkaOutput(func() error {
 
+		// trying to recreate test/script.clj test
+		time.Sleep(200 * time.Millisecond)
+
 		if ee := os.Chtimes(thisFile, time.Now(), time.Now()); ee != nil {
 			return ee
-
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		//events within delay should be ignored.
+		time.Sleep(10 * time.Millisecond)
+
+		if ee := os.Chtimes(thisFile, time.Now(), time.Now()); ee != nil {
+			return ee
+		}
+
+		time.Sleep(1000 * time.Millisecond)
+
 		return nil
 	})
 
@@ -58,6 +69,7 @@ func TestStartWatcher(t *testing.T) {
 	fmt.Print("got:", fsNotifications)
 	//"d2:id1:26:statusl4:donee5:value37:{\"type\":\"chmod\",\"path\":\"ops_test.go\"}e"
 	//but structured
+	//[{chmod ./ops_test.go <nil> <nil>} {chmod ops_test.go <nil> <nil>}]
 
 }
 
@@ -102,12 +114,10 @@ func captureBabashkaOutput(f func() error) ([]Response, error) {
 		jsonString := babashkaMessage.Value
 
 		var fsnotifyMsg Response
-		// Parse the JSON string into the FileAction struct
 
 		if err := json.Unmarshal([]byte(jsonString), &fsnotifyMsg); err != nil {
 			return nil, err
-		}		
-
+		}
 
 		responses = append(responses, fsnotifyMsg)
 	}
