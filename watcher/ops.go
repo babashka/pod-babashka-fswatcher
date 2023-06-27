@@ -3,9 +3,11 @@ package watcher
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/babashka/pod-babashka-fswatcher/babashka"
@@ -85,6 +87,49 @@ func debounce(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Eve
 	return output
 }
 
+func dedup(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Event {
+	output := make(chan *fsnotify.Event)
+	var mu sync.Mutex
+	timers := make(map[string]*time.Timer)
+
+	go func() {
+		for {
+			select {
+			case event, ok := <-input:
+				if !ok {
+					return
+				}
+
+				filepath := strings.TrimPrefix(event.Name, "./")
+
+				mu.Lock()
+				t, ok := timers[filepath]
+				mu.Unlock()
+
+				if !ok {
+					t = time.AfterFunc(math.MaxInt64, func() {
+						output <- &event
+						mu.Lock()
+						delete(timers, filepath)
+						mu.Unlock()
+					})
+
+					t.Stop()
+
+					mu.Lock()
+					timers[filepath] = t
+					mu.Unlock()
+				}
+
+				t.Reset(delay)
+
+			}
+		}
+	}()
+
+	return output
+}
+
 func startWatcher(message *babashka.Message, watcherId int) error {
 	fsWatcher := watchers[watcherId]
 	opts := fsWatcher.Opts
@@ -106,7 +151,7 @@ func startWatcher(message *babashka.Message, watcherId int) error {
 		}
 	}
 
-	debounced := debounce(time.Millisecond*time.Duration(opts.DelayMs), watcher.Events)
+	debounced := dedup(time.Millisecond*time.Duration(opts.DelayMs), watcher.Events)
 
 	go func() error {
 		for {

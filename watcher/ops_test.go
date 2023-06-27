@@ -51,7 +51,7 @@ func TestStartWatcher(t *testing.T) {
 		}
 
 		//events within delay should be ignored.
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(249 * time.Millisecond)
 
 		if ee := os.Chtimes(thisFile, time.Now(), time.Now()); ee != nil {
 			return ee
