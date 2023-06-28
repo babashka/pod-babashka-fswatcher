@@ -17,6 +17,7 @@ import (
 type Opts struct {
 	DelayMs   uint64 `json:"delay-ms"`
 	Recursive bool   `json:"recursive"`
+	Dedup     bool   `json:dedup`
 }
 
 type Response struct {
@@ -68,26 +69,7 @@ func listDirRec(dir string) ([]string, error) {
 	return files, nil
 }
 
-func debounce(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Event {
-	output := make(chan *fsnotify.Event)
-	go func() {
-		for {
-			select {
-			case event, ok := <-input:
-				if !ok {
-					return
-				}
-				output <- &event
-			case <-time.After(50 * time.Millisecond):
-				time.Sleep(delay)
-			}
-		}
-	}()
-
-	return output
-}
-
-func dedup(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Event {
+func dedup(delay time.Duration, input chan fsnotify.Event, dedup bool) chan *fsnotify.Event {
 	output := make(chan *fsnotify.Event)
 	var mu sync.Mutex
 	timers := make(map[string]*time.Timer)
@@ -98,6 +80,11 @@ func dedup(delay time.Duration, input chan fsnotify.Event) chan *fsnotify.Event 
 			case event, ok := <-input:
 				if !ok {
 					return
+				}
+
+				if !dedup {
+					output <- &event
+					continue
 				}
 
 				filepath := strings.TrimPrefix(event.Name, "./")
@@ -151,12 +138,12 @@ func startWatcher(message *babashka.Message, watcherId int) error {
 		}
 	}
 
-	debounced := dedup(time.Millisecond*time.Duration(opts.DelayMs), watcher.Events)
+	deduped := dedup(time.Millisecond*time.Duration(opts.DelayMs), watcher.Events, opts.Dedup)
 
 	go func() error {
 		for {
 			select {
-			case event := <-debounced:
+			case event := <-deduped:
 				err := babashka.WriteInvokeResponse(
 					message,
 					Response{strings.ToLower(event.Op.String()), event.Name, nil, nil},
@@ -237,7 +224,7 @@ func ProcessMessage(message *babashka.Message) (any, error) {
 				return nil, err
 			}
 
-			opts := Opts{DelayMs: 2000, Recursive: false}
+			opts := Opts{DelayMs: 2000, Recursive: false, Dedup: true}
 			if err := json.Unmarshal([]byte(args[1]), &opts); err != nil {
 				return nil, err
 			}

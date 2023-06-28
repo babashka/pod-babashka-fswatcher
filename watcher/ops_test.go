@@ -17,7 +17,7 @@ func TestStartWatcher(t *testing.T) {
 
 	watchFolder := "."
 	thisFile := "ops_test.go"
-	delay := 250
+	delay := 50
 	recursive := true
 
 	createMessage := babashka.Message{
@@ -26,7 +26,7 @@ func TestStartWatcher(t *testing.T) {
 	startMessage := babashka.Message{
 		Op: "invoke", Id: "2", Var: "pod.babashka.fswatcher/-start-watcher", Args: "[102]"}
 
-	opts := Opts{DelayMs: uint64(delay), Recursive: recursive}
+	opts := Opts{DelayMs: uint64(delay), Recursive: recursive, Dedup: true}
 
 	watcherInfo, err := createWatcher(&createMessage, watchFolder, opts)
 
@@ -44,20 +44,20 @@ func TestStartWatcher(t *testing.T) {
 	fsNotifications, err := captureBabashkaOutput(func() error {
 
 		// trying to recreate test/script.clj test
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		if ee := os.Chtimes(thisFile, time.Now(), time.Now()); ee != nil {
 			return ee
 		}
 
 		//events within delay should be ignored.
-		time.Sleep(249 * time.Millisecond)
+		time.Sleep(49 * time.Millisecond)
 
 		if ee := os.Chtimes(thisFile, time.Now(), time.Now()); ee != nil {
 			return ee
 		}
 
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(51 * time.Millisecond)
 
 		return nil
 	})
@@ -66,10 +66,15 @@ func TestStartWatcher(t *testing.T) {
 		t.Errorf("Error Capturing output: %s", err)
 	}
 
-	fmt.Print("got:", fsNotifications)
-	//"d2:id1:26:statusl4:donee5:value37:{\"type\":\"chmod\",\"path\":\"ops_test.go\"}e"
-	//but structured
-	//[{chmod ./ops_test.go <nil> <nil>} {chmod ops_test.go <nil> <nil>}]
+	fmt.Println(fsNotifications)
+
+	if len(fsNotifications) != 1 {
+		t.Errorf("Expected 1 notification, but got %d", len(fsNotifications))
+	}
+
+	if fsNotifications[0].Path != "./ops_test.go" {
+		t.Errorf("Expected notification Path to be './ops_test.go', but got %s", fsNotifications[0].Path)
+	}
 
 }
 
