@@ -20,7 +20,7 @@
 (def watcher (fw/watch "test" callback {:delay-ms 250 :recursive true}))
 
 (Thread/sleep 200)
-(sh "touch" *file*);;touches current file
+(sh "touch" *file*)
 (Thread/sleep 1000)
 
 (prn :events @events)
