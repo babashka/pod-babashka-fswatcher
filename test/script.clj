@@ -49,7 +49,7 @@
         _ (sh "touch" *file*)
         _ (Thread/sleep 5)
         _ (sh "touch" *file*)
-        ;;wait for time to end
+        ;;wait for timer to end
         _ (Thread/sleep 51)]
     (prn :events-dedup @events)
     (testing "tests that the events that happened inside the interval were deduped."
