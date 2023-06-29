@@ -93,6 +93,7 @@ func dedup(delay time.Duration, input chan fsnotify.Event, dedup bool) chan *fsn
 				t, ok := timers[filepath]
 				mu.Unlock()
 
+				// If there's no timer, create one
 				if !ok {
 					t = time.AfterFunc(math.MaxInt64, func() {
 						output <- &event
