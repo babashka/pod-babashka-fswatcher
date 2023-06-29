@@ -50,7 +50,7 @@
     (Thread/sleep 5)
     (sh "touch" *file*)
     ;;wait for timer to end
-    (Thread/sleep 51)
+    (Thread/sleep 60)
     (prn :events-dedup @events)
     (testing "tests that the events that happened inside the interval were deduped."
       (is (= 1 (count @events))))
@@ -62,7 +62,7 @@
     (sh "touch" *file*)
     (Thread/sleep 51)
     (sh "touch" *file*)
-    (Thread/sleep 51)
+    (Thread/sleep 60)
     (prn :events-dedup-outside-interval @events)
     (testing "events outside of dedup interval come through."
       (is (= 2 (count @events))))
@@ -72,19 +72,19 @@
   (reset! events [])
   (let [watcher (fw/watch "test" #(swap! events conj %) {:delay-ms 50 :recursive true :dedup false})]
     (sh "touch" *file*)
-    (Thread/sleep 51)
+    (Thread/sleep 60)
     (prn :events-no-dedup @events)
     (testing "`dedup :false` won't dedup"
       (is (not (= 1 (count @events)))))
     (fw/unwatch watcher)))
 
-(deftest recursive-dedup
+(deftest recursive-dedup-test
   (let [ev (atom [])
         file-name "test/dir/anotherdir/bla.txt"
         _ (clojure.java.io/make-parents file-name)
         watcher (fw/watch "test" #(swap! ev conj %) {:delay-ms 50 :recursive true})]
     (spit file-name "whatever")
-    (Thread/sleep 51)
+    (Thread/sleep 60)
     (prn :events-recursive-dedup @ev)
     (testing "dedup recursive works"
       (is (= @ev [{:type :write, :path "test/dir/anotherdir/bla.txt"}]))
