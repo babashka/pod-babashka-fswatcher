@@ -17,7 +17,7 @@ import (
 type Opts struct {
 	DelayMs   uint64 `json:"delay-ms"`
 	Recursive bool   `json:"recursive"`
-	Dedup     bool   `json:dedup`
+	Dedup     bool   `json:"dedup"`
 }
 
 type Response struct {
