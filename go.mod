@@ -7,4 +7,4 @@ require (
 	github.com/jackpal/bencode-go v1.0.0
 )
 
-require golang.org/x/sys v0.2.0 // indirect
+require golang.org/x/sys v0.10.0 // indirect
