@@ -14,7 +14,7 @@ Load the pod:
 
 ``` clojure
 (require '[babashka.pods :as pods])
-(pods/load-pod 'org.babashka/fswatcher "0.0.3")
+(pods/load-pod 'org.babashka/fswatcher "0.0.5")
 
 (require '[pod.babashka.fswatcher :as fw])
 ```
@@ -42,7 +42,7 @@ See [test/script.clj](test/script.clj) for an example test script.
 In babashka 0.8.0 it is possible to specify pods in `bb.edn`:
 
 ``` clojure
-{:pods {org.babashka/fswatcher {:version "0.0.3"}}
+{:pods {org.babashka/fswatcher {:version "0.0.5"}}
  :tasks {watch {:requires ([pod.babashka.fswatcher :as fw])
                 :task (do (fw/watch "project.clj"
                                     (fn [event]
