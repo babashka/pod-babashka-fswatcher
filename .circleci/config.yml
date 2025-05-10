@@ -25,17 +25,13 @@ jobs:
           environment:
             GOOS: darwin
             GOARCH: amd64
-          command: |
-            go build -o macos-amd64/pod-babashka-fswatcher main.go
-            ls -la macos-amd64/pod-babashka-fswatcher
+          command: go build -o macos-amd64/pod-babashka-fswatcher main.go
       - run:
           name: Build mac ARM64 binary
           environment:
             GOOS: darwin
             GOARCH: arm64
-          command: |
-            go build -o macos-aarch64/pod-babashka-fswatcher main.go
-            ls -la macos-aarch64/pod-babashka-fswatcher
+          command: go build -o macos-aarch64/pod-babashka-fswatcher main.go
       - run:
           name: Build windows binary
           environment:
@@ -64,7 +60,7 @@ jobs:
             zip -j "release/pod-babashka-fswatcher-$VERSION-linux-amd64.zip" linux-amd64/pod-babashka-fswatcher
             zip -j "release/pod-babashka-fswatcher-$VERSION-linux-aarch64.zip" linux-aarch64/pod-babashka-fswatcher
             zip -j "release/pod-babashka-fswatcher-$VERSION-macos-amd64.zip" macos-amd64/pod-babashka-fswatcher
-            zip -j "release/pod-babashka-fswatcher-$VERSION-macos-aarch64.zip" macos-amd64/pod-babashka-fswatcher
+            zip -j "release/pod-babashka-fswatcher-$VERSION-macos-aarch64.zip" macos-aarch64/pod-babashka-fswatcher
             zip -j "release/pod-babashka-fswatcher-$VERSION-windows-amd64.zip" windows-amd64/pod-babashka-fswatcher.exe
       - store_artifacts:
           path: release

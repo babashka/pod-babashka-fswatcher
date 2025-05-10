@@ -2,6 +2,12 @@
 
 [pod-babashka-fswatcher](https://github.com/babashka/pod-babashka-fswatcher): babashka filewatcher pod
 
+## 0.0.6
+
+- [#22](https://github.com/babashka/pod-babashka-fswatcher/issues/22): fix macos aarch64 binary
+- upgrade to golang 1.24
+
+
 ## 0.0.5
 
 - [#17](https://github.com/babashka/pod-babashka-fswatcher/issues/17): Add macOS aarch64 binary ([@lispyclouds](https://github.com/lispyclouds))
