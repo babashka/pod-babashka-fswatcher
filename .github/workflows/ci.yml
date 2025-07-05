@@ -1,0 +1,97 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    defaults:
+      run:
+        shell: bash
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('.github/workflows/*.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Run Go tests
+      run: go test ./...
+
+    - name: Create output directories
+      run: |
+        mkdir -p linux-amd64
+        mkdir -p linux-aarch64
+        mkdir -p macos-amd64
+        mkdir -p macos-aarch64
+        mkdir -p windows-amd64
+        mkdir -p bb
+
+    - name: Build linux binary
+      run: go build -o linux-amd64/pod-babashka-fswatcher main.go
+
+    - name: Build linux ARM64 binary
+      env:
+        GOARCH: arm64
+      run: go build -o linux-aarch64/pod-babashka-fswatcher main.go
+
+    - name: Build mac AMD64 binary
+      env:
+        GOOS: darwin
+        GOARCH: amd64
+      run: go build -o macos-amd64/pod-babashka-fswatcher main.go
+
+    - name: Build mac ARM64 binary
+      env:
+        GOOS: darwin
+        GOARCH: arm64
+      run: go build -o macos-aarch64/pod-babashka-fswatcher main.go
+
+    - name: Build windows binary
+      env:
+        GOOS: windows
+        GOARCH: amd64
+      run: go build -o windows-amd64/pod-babashka-fswatcher.exe main.go
+
+    - name: Install bb for test
+      run: |
+        bash <(curl -sL https://raw.githubusercontent.com/borkdude/babashka/master/install) \
+          --dir bb --download-dir bb
+
+    - name: Run test
+      run: PATH=$PATH:bb WINDOWS=${{ runner.os == 'Windows' && 'true' || ''}} script/test
+
+    - name: Create release artifacts
+      run: |
+        VERSION=$(cat resources/POD_BABASHKA_FSWATCHER_VERSION)
+        mkdir release
+
+        zip -j "release/pod-babashka-fswatcher-$VERSION-linux-amd64.zip" linux-amd64/pod-babashka-fswatcher
+        zip -j "release/pod-babashka-fswatcher-$VERSION-linux-aarch64.zip" linux-aarch64/pod-babashka-fswatcher
+        zip -j "release/pod-babashka-fswatcher-$VERSION-macos-amd64.zip" macos-amd64/pod-babashka-fswatcher
+        zip -j "release/pod-babashka-fswatcher-$VERSION-macos-aarch64.zip" macos-aarch64/pod-babashka-fswatcher
+        zip -j "release/pod-babashka-fswatcher-$VERSION-windows-amd64.zip" windows-amd64/pod-babashka-fswatcher.exe
+
+    - name: Upload release artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-artifacts
+        path: release/
