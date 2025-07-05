@@ -57,7 +57,7 @@ func WriteDescribeResponse(describeResponse *DescribeResponse) {
 	writeResponse(*describeResponse)
 }
 
-func WriteInvokeResponse(inputMessage *Message, value any) error {
+func WriteInvokeResponse(inputMessage *Message, value any, done bool) error {
 	if value == nil {
 		return nil
 	}
@@ -65,7 +65,13 @@ func WriteInvokeResponse(inputMessage *Message, value any) error {
 	if err != nil {
 		return err
 	}
-	response := InvokeResponse{Id: inputMessage.Id, Status: []string{"done"}, Value: string(resultValue)}
+	var status []string
+	if (done) {
+		status = []string{"done"}
+	} else {
+		status = []string{}
+	}
+	response := InvokeResponse{Id: inputMessage.Id, Status: status, Value: string(resultValue)}
 	writeResponse(response)
 
 	return nil

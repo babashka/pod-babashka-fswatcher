@@ -24,6 +24,6 @@ func main() {
 			babashka.WriteDescribeResponse(describeRes)
 			continue
 		}
-		babashka.WriteInvokeResponse(message, res)
+		babashka.WriteInvokeResponse(message, res, true)
 	}
 }

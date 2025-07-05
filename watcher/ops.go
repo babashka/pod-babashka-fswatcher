@@ -148,7 +148,7 @@ func startWatcher(message *babashka.Message, watcherId int) error {
 				err := babashka.WriteInvokeResponse(
 					message,
 					Response{strings.ToLower(event.Op.String()), event.Name, nil, nil},
-				)
+				false)
 				if err != nil {
 					babashka.WriteErrorResponse(message, err)
 				}
@@ -157,7 +157,7 @@ func startWatcher(message *babashka.Message, watcherId int) error {
 					return err
 				}
 				msg := err.Error()
-				babashka.WriteInvokeResponse(message, Response{"error", path, nil, &msg})
+				babashka.WriteInvokeResponse(message, Response{"error", path, nil, &msg}, true)
 			}
 		}
 	}()
