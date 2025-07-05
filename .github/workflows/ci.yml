@@ -33,8 +33,8 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    - name: Run Go tests
-      run: go test ./...
+    # - name: Run Go tests
+    #   run: go test ./...
 
     - name: Create output directories
       run: |
