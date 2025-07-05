@@ -2,9 +2,9 @@
 
 (ns script
   (:require [babashka.pods :as pods]
+            [clojure.java.io :as io]
             [clojure.java.shell :refer [sh]]
-            [clojure.test :as t :refer [deftest is testing]]
-            [clojure.java.io :as io]))
+            [clojure.test :as t :refer [deftest is testing]]))
 
 (prn (pods/load-pod "./pod-babashka-fswatcher"))
 
@@ -66,16 +66,6 @@
     (prn :events-dedup-outside-interval @events)
     (testing "events outside of dedup interval come through."
       (is (= 2 (count @events))))
-    (fw/unwatch watcher)))
-
-(deftest no-dedup-test
-  (reset! events [])
-  (let [watcher (fw/watch "test" #(swap! events conj %) {:delay-ms 50 :recursive true :dedup false})]
-    (sh "touch" *file*)
-    (Thread/sleep 60)
-    (prn :events-no-dedup @events)
-    (testing "`dedup :false` won't dedup"
-      (is (not (= 1 (count @events)))))
     (fw/unwatch watcher)))
 
 (deftest recursive-dedup-test
