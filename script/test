@@ -4,7 +4,7 @@ set -euo pipefail
 
 go build -o pod-babashka-fswatcher main.go
 
-if [[ "$WINDOWS" == "true" ]]; then
+if [[ "${WINDOWS:-}" == "true" ]]; then
     mv pod-babashka-fswatcher pod-babashka-fswatcher.exe
 fi
 
