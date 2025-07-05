@@ -35,8 +35,8 @@
           (is (= (count ev1) (count ev2))))))))
 
 (deftest dedup-test
-  (reset! events [])
-  (let [watcher (fw/watch "test" #(swap! events conj %) {:delay-ms 50 :recursive true})]
+  (let [events (atom [])
+        watcher (fw/watch "test" #(swap! events conj %) {:delay-ms 50 :recursive true})]
     (sh "touch" *file*)
     (Thread/sleep 5)
     (sh "touch" *file*)
