@@ -10,12 +10,11 @@
 
 (require '[pod.babashka.fswatcher :as fw])
 
-(def events (atom []))
-
  ;; idempotency
 
 (deftest events-test
-  (let [callback
+  (let [events (atom [])
+        callback
         (fn [event]
           ;; (prn :event event)
           (swap! events conj event))
@@ -35,8 +34,8 @@
           (is (= (count ev1) (count ev2))))))))
 
 (deftest dedup-test
-  (reset! events [])
-  (let [watcher (fw/watch "test" #(swap! events conj %) {:delay-ms 50 :recursive true})]
+  (let [events (atom [])
+        watcher (fw/watch "test" #(swap! events conj %) {:delay-ms 50 :recursive true})]
     (sh "touch" *file*)
     (Thread/sleep 5)
     (sh "touch" *file*)
@@ -50,8 +49,8 @@
     (fw/unwatch watcher)))
 
 (deftest dedup-outside-interval-test
-  (reset! events [])
-  (let [watcher (fw/watch "test" #(swap! events conj %) {:delay-ms 50 :recursive true})]
+  (let [events (atom [])
+        watcher (fw/watch "test" #(swap! events conj %) {:delay-ms 50 :recursive true})]
     (sh "touch" *file*)
     (Thread/sleep 51)
     (sh "touch" *file*)
@@ -62,7 +61,7 @@
     (fw/unwatch watcher)))
 
 (deftest recursive-dedup-test
-  (let [ev (atom [])
+  (let [ ev (atom [])
         file-name "test/dir/anotherdir/bla.txt"
         _ (clojure.java.io/make-parents file-name)
         watcher (fw/watch "test" #(swap! ev conj %) {:delay-ms 50 :recursive true})]

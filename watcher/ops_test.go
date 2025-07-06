@@ -72,7 +72,7 @@ func TestStartWatcher(t *testing.T) {
 		t.Errorf("Expected 1 notification, but got %d", len(fsNotifications))
 	}
 
-	if fsNotifications[0].Path != "./ops_test.go" {
+	if strings.TrimPrefix(fsNotifications[0].Path, "./") != "ops_test.go" {
 		t.Errorf("Expected notification Path to be './ops_test.go', but got %s", fsNotifications[0].Path)
 	}
 
