@@ -3,7 +3,7 @@ module github.com/babashka/pod-babashka-fswatcher
 go 1.18
 
 require (
-	github.com/fsnotify/fsnotify v1.6.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/jackpal/bencode-go v1.0.0
 )
 
